@@ -3,9 +3,7 @@
   box-sizing: border-box;
   overflow-y: scroll;
   height: 100%;
-  padding-top: var(--ui-kit-space-2);
-  padding-right: var(--ui-kit-space-2);
-  padding-bottom: var(--ui-kit-space-2);
+  padding: 16px;
 
   /* for firefox */
   scrollbar-width: thin;
@@ -13,20 +11,16 @@
 }
 
 .scrollContainer::-webkit-scrollbar {
-  position: absolute;
-  width: var(--ui-kit-base-unit);
-  height: 0;
+  width: 8px;
 }
 
 .scrollContainer::-webkit-scrollbar-track {
   background: transparent;
-  width: var(--ui-kit-base-unit);
-  margin-top: var(--ui-kit-space-1);
-  margin-bottom: var(--ui-kit-space-1);
+  margin: 4px 0;
 }
 
 .scrollContainer::-webkit-scrollbar-thumb {
-  border-radius: var(--ui-kit-border-radius);
+  border-radius: 4px;
   background: var(--ui-kit-color-typography-quaternary);
   visibility: hidden;
 }
@@ -35,4 +29,9 @@
 .scrollContainer:focus::-webkit-scrollbar-thumb,
 .scrollContainer:focus-within::-webkit-scrollbar-thumb {
   visibility: visible;
+}
+
+/* Simple button styling (optional, since @canva/app-ui-kit handles most) */
+button {
+  margin-top: 8px;
 }
