@@ -1,4 +1,4 @@
-import { Button, Rows, Text, Box } from "@canva/app-ui-kit";
+import { Button, Rows, Text } from "@canva/app-ui-kit";
 import * as React from "react";
 import { appProcess } from "@canva/platform";
 import { useOverlay } from "utils/use_overlay_hook";
@@ -24,12 +24,12 @@ export function App() {
 function ObjectPanel() {
   const overlay = useOverlay("image_selection");
   const [isImageReady, setIsImageReady] = React.useState(false);
-  const [imageSelected, setImageSelected] = React.useState(false);
+  const [showColorBlindnessOptions, setShowColorBlindnessOptions] = React.useState(false);
+  const [showBlurrinessOptions, setShowBlurrinessOptions] = React.useState(false);
 
   React.useEffect(() => {
     appProcess.registerOnMessage((sender, message) => {
       setIsImageReady(Boolean(message.isImageReady));
-      setImageSelected(Boolean(message.isImageReady));
     });
   }, []);
 
@@ -44,11 +44,14 @@ function ObjectPanel() {
 
     const { width, height } = pageContext.dimensions;
 
+    // Create a new image element that will cover the entire canvas
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
 
     canvas.width = width;
     canvas.height = height;
+
+    // Fill the canvas with a semi-transparent gray color
     context!.fillStyle = "rgba(128, 128, 128, 0.5)";
     context!.fillRect(0, 0, width, height);
 
@@ -61,6 +64,7 @@ function ObjectPanel() {
       thumbnailUrl: dataUrl,
     });
 
+    // Add the new image element to the design
     await addNativeElement({
       type: "IMAGE",
       ref: asset.ref,
@@ -73,78 +77,54 @@ function ObjectPanel() {
     console.log("Color blindness overlay applied.");
   };
 
-  const applyBlur = () => {
-    appProcess.broadcastMessage("applyBlur");
+  const toggleColorBlindnessOptions = () => {
+    setShowColorBlindnessOptions(!showColorBlindnessOptions);
   };
 
-  const applyColorBlindness = () => {
-    appProcess.broadcastMessage("applyColorBlindness");
+  const toggleBlurrinessOptions = () => {
+    setShowBlurrinessOptions(!showBlurrinessOptions);
   };
 
-  const handleOpen = () => {
-    overlay.open();
-  };
-
-  const handleSave = () => {
-    overlay.close({ reason: "completed" });
-  };
-
-  const handleClose = () => {
-    overlay.close({ reason: "aborted" });
+  const resetFilters = () => {
+    // Reset logic goes here
+    console.log("Reset filters applied.");
   };
 
   return (
     <div className={styles.scrollContainer}>
       <Rows spacing="2u">
-        <Text size="medium" variant="bold">
-          Visual Impairment Simulations
-        </Text>
-        <Text>Simulate different visual impairments on your design elements.</Text>
+        <Text>Simulate different visual impairments.</Text>
 
-        {/* Image Selection Section */}
-        <Box padding="2u">
-          <Text size="small" variant="bold">Image Selection</Text>
-          <Text>Please select or upload an image to start applying effects.</Text>
-          <Button variant="secondary" disabled={!overlay.canOpen} onClick={handleOpen}>
-            Select or Upload Image
-          </Button>
-        </Box>
-
-        {/* Conditionally render the Apply Simulations Section */}
-        {imageSelected && (
-          <Box padding="2u">
-            <Text size="small" variant="bold">Apply Simulations</Text>
-            <Text>Choose an effect to apply to the selected image.</Text>
-            <Button variant="primary" disabled={!isImageReady} onClick={applyBlur}>
-              Apply Blurriness
+        {/* Color Blindness Section */}
+        <Button variant="secondary" onClick={toggleColorBlindnessOptions}>
+          {showColorBlindnessOptions ? "Hide" : "Show"} Color Blindness Options
+        </Button>
+        {showColorBlindnessOptions && (
+          <>
+            <Button variant="primary" disabled={!overlay.canOpen} onClick={overlay.open}>
+              Apply Simulation to Selected Image
             </Button>
-            <Button variant="primary" disabled={!isImageReady} onClick={applyColorBlindness}>
-              Apply Color Blindness
+            <Button variant="primary" onClick={applyGlobalColorBlindnessOverlay}>
+              Apply Global Simulation
             </Button>
-            <Button variant="secondary" disabled={!isImageReady} onClick={handleSave}>
-              Save and Close
-            </Button>
-            <Button variant="secondary" disabled={!isImageReady} onClick={handleClose}>
-              Close without Saving
-            </Button>
-          </Box>
+          </>
         )}
 
-        {/* Global Simulation Section */}
-        <Box padding="2u">
-          <Text size="small" variant="bold">Global Simulation</Text>
-          <Text>Apply effects to the entire canvas.</Text>
-          <Button variant="primary" onClick={applyGlobalColorBlindnessOverlay}>
-            Apply Global Simulation
-          </Button>
-        </Box>
+        {/* Blurriness Section */}
+        <Button variant="secondary" onClick={toggleBlurrinessOptions}>
+          {showBlurrinessOptions ? "Hide" : "Show"} Blurriness Options
+        </Button>
+        {showBlurrinessOptions && (
+          <>
+            <Button variant="primary" disabled={!isImageReady} onClick={() => appProcess.broadcastMessage("applyBlur")}>
+              Apply Blurriness to Selected Image
+            </Button>
+          </>
+        )}
 
-        {/* Reset Filters */}
-        <Box padding="2u">
-          <Button variant="primary" onClick={() => console.log("Reset Filters")}>
-            Reset Filters
-          </Button>
-        </Box>
+        <Button variant="tertiary" onClick={resetFilters}>
+          Reset Filters
+        </Button>
       </Rows>
     </div>
   );
@@ -185,28 +165,6 @@ function SelectedImageOverlay() {
       }
     });
   }, []);
-
-  React.useEffect(() => {
-    return void appProcess.current.setOnDispose(async (context) => {
-      if (context.reason === "completed") {
-        const { canvas } = getCanvas(canvasRef.current);
-        const dataUrl = canvas.toDataURL();
-
-        const asset = await upload({
-          type: "IMAGE",
-          mimeType: "image/png",
-          url: dataUrl,
-          thumbnailUrl: dataUrl,
-        });
-
-        const draft = await selection.read();
-        draft.contents[0].ref = asset.ref;
-        await draft.save();
-
-        appProcess.broadcastMessage({ isImageReady: false });
-      }
-    });
-  }, [selection]);
 
   return <canvas ref={canvasRef} style={{ width: "100%", height: "100%" }} />;
 }
