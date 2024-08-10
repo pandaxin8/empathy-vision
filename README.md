@@ -65,8 +65,8 @@ Empathy Vision addresses a critical gap in design accessibility by allowing desi
 
 ## How to Get Started
 - Clone the Repository: Download the project files to your local machine.
-- Install Dependencies: Run npm install to install all necessary packages.
-- Run the Project: Use npm start to launch the app in Canva’s development environment.
+- Install Dependencies: Run `npm install`to install all necessary packages.
+- Run the Project: Use `npm start` to launch the app in Canva’s development environment.
 - Start Simulating: Open the Canva editor, select or upload an image, and begin applying visual impairment and accessibility simulations to enhance your design process.
 
 ## Contributions
