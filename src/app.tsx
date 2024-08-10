@@ -7,25 +7,31 @@ import { addNativeElement, getCurrentPageContext } from "@canva/design";
 import { useSelection } from "utils/use_selection_hook";
 import styles from "styles/components.css";
 
+// Main App component that decides which surface (Object Panel or Selected Image Overlay) to render
 export function App() {
   const context = appProcess.current.getInfo();
 
+  // Check if the current surface is the Object Panel
   if (context.surface === "object_panel") {
     return <ObjectPanel />;
   }
 
+  // Check if the current surface is the Selected Image Overlay
   if (context.surface === "selected_image_overlay") {
     return <SelectedImageOverlay />;
   }
 
+  // Handle unexpected surface types
   throw new Error(`Invalid surface: ${context.surface}`);
 }
 
+// Component for the Object Panel where users interact with the app
 function ObjectPanel() {
   const overlay = useOverlay("image_selection");
   const [isImageReady, setIsImageReady] = React.useState(false);
   const [imageSelected, setImageSelected] = React.useState(false);
 
+  // Listen for messages broadcasted from the overlay to check if the image is ready
   React.useEffect(() => {
     appProcess.registerOnMessage((sender, message) => {
       setIsImageReady(Boolean(message.isImageReady));
@@ -33,6 +39,7 @@ function ObjectPanel() {
     });
   }, []);
 
+  // Function to apply a global color blindness simulation overlay to the entire canvas
   const applyGlobalColorBlindnessOverlay = async () => {
     console.log("Applying global color blindness overlay...");
 
@@ -73,22 +80,27 @@ function ObjectPanel() {
     console.log("Color blindness overlay applied.");
   };
 
+  // Function to broadcast a message to apply the blur effect to the selected image
   const applyBlur = () => {
     appProcess.broadcastMessage("applyBlur");
   };
 
+  // Function to broadcast a message to apply the color blindness effect to the selected image
   const applyColorBlindness = () => {
     appProcess.broadcastMessage("applyColorBlindness");
   };
 
+  // Function to open the image selection overlay
   const handleOpen = () => {
     overlay.open();
   };
 
+  // Function to save and close the overlay after applying the simulation
   const handleSave = () => {
     overlay.close({ reason: "completed" });
   };
 
+  // Function to close the overlay without saving changes
   const handleClose = () => {
     overlay.close({ reason: "aborted" });
   };
@@ -150,6 +162,7 @@ function ObjectPanel() {
   );
 }
 
+// Component for the Selected Image Overlay where simulations are applied directly to the image
 function SelectedImageOverlay() {
   const selection = useSelection("image");
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -211,6 +224,7 @@ function SelectedImageOverlay() {
   return <canvas ref={canvasRef} style={{ width: "100%", height: "100%" }} />;
 }
 
+// Helper function to download an image
 async function downloadImage(url: string) {
   const response = await fetch(url, { mode: "cors" });
   const blob = await response.blob();
@@ -230,6 +244,7 @@ async function downloadImage(url: string) {
   return img;
 }
 
+// Helper function to get the canvas and its 2D rendering context
 function getCanvas(canvas: HTMLCanvasElement | null) {
   if (!canvas) {
     throw new Error("HTMLCanvasElement does not exist");
@@ -244,6 +259,7 @@ function getCanvas(canvas: HTMLCanvasElement | null) {
   return { canvas, context };
 }
 
+// Function to apply a blur effect to the image
 function applyBlurEffect(canvas: HTMLCanvasElement | null) {
   if (!canvas) return;
   const context = canvas.getContext("2d");
@@ -252,6 +268,7 @@ function applyBlurEffect(canvas: HTMLCanvasElement | null) {
   context.drawImage(canvas, 0, 0);
 }
 
+// Function to apply a grayscale effect (simulating color blindness) to the image
 function applyColorBlindnessEffect(canvas: HTMLCanvasElement | null) {
   if (!canvas) return;
   const context = canvas.getContext("2d");
