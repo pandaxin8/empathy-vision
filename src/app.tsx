@@ -34,6 +34,7 @@ function ObjectPanel() {
   const [isBlueYellow, setIsBlueYellow] = React.useState(false);
   const [isRedGreen, setIsRedGreen] = React.useState(false);
   const [blurLevel, setBlurLevel] = React.useState(0);
+  const [condition, setCondition] = React.useState<string | null>(null);
 
   // Listen for messages broadcasted from the overlay to check if the image is ready
   React.useEffect(() => {
@@ -68,6 +69,53 @@ function ObjectPanel() {
     appProcess.broadcastMessage({ type: "applyBlur", level });
   };
 
+  // Function to apply simulation effects based on the selected condition
+  const applyCondition = (newCondition: string) => {
+    setCondition(newCondition);
+    appProcess.broadcastMessage({ type: "applyCondition", condition: newCondition });
+  };
+
+  // Function to apply global simulation effects
+  const applyGlobalSimulation = async () => {
+    console.log("Applying global color blindness overlay...");
+
+    const pageContext = await getCurrentPageContext();
+    if (!pageContext?.dimensions) {
+      console.error("Could not get page dimensions");
+      return;
+    }
+
+    const { width, height } = pageContext.dimensions;
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    canvas.width = width;
+    canvas.height = height;
+    context!.fillStyle = "rgba(128, 128, 128, 0.5)";
+    context!.fillRect(0, 0, width, height);
+
+    const dataUrl = canvas.toDataURL("image/png");
+
+    const asset = await upload({
+      type: "IMAGE",
+      mimeType: "image/png",
+      url: dataUrl,
+      thumbnailUrl: dataUrl,
+    });
+
+    await addNativeElement({
+      type: "IMAGE",
+      ref: asset.ref,
+      width: width,
+      height: height,
+      top: 0,
+      left: 0,
+    });
+
+    console.log("Color blindness overlay applied.");
+  };
+
   // Function to open the image selection overlay
   const handleOpen = () => {
     overlay.open();
@@ -87,11 +135,10 @@ function ObjectPanel() {
     <div className={styles.scrollContainer}>
       <Rows spacing="2u">
         <Text size="medium" variant="bold">
-          Visual Impairment Simulations
+          Visual Simulations
         </Text>
-        <Text>Simulate different visual impairments on your design elements.</Text>
+        <Text>Simulate different visual impairments and lighting conditions on your design elements.</Text>
 
-        {/* Image Selection Section */}
         <Box padding="2u">
           <Text size="small" variant="bold">Image Selection</Text>
           <Text>Please select or upload an image to start applying effects.</Text>
@@ -100,7 +147,6 @@ function ObjectPanel() {
           </Button>
         </Box>
 
-        {/* Conditionally render the Apply Simulations Section */}
         {imageSelected && (
           <Box padding="2u">
             <Text size="small" variant="bold">Apply Simulations</Text>
@@ -130,11 +176,70 @@ function ObjectPanel() {
                 onChange={updateBlurLevel} 
               />
             </Box>
-            
-            <Button variant="secondary" disabled={!isImageReady} onClick={handleSave}>
+
+            {/* Time of Day and Weather Condition Buttons */}
+            <Text size="small" variant="bold">Simulate Time of Day</Text>
+            <Button 
+              variant={condition === "earlyMorning" ? "primary" : "secondary"} 
+              onClick={() => applyCondition("earlyMorning")}
+            >
+              Early Morning
+            </Button>
+            <Button 
+              variant={condition === "morning" ? "primary" : "secondary"} 
+              onClick={() => applyCondition("morning")}
+            >
+              Morning
+            </Button>
+            <Button 
+              variant={condition === "midday" ? "primary" : "secondary"} 
+              onClick={() => applyCondition("midday")}
+            >
+              Midday
+            </Button>
+            <Button 
+              variant={condition === "afternoon" ? "primary" : "secondary"} 
+              onClick={() => applyCondition("afternoon")}
+            >
+              Afternoon
+            </Button>
+            <Button 
+              variant={condition === "evening" ? "primary" : "secondary"} 
+              onClick={() => applyCondition("evening")}
+            >
+              Evening
+            </Button>
+            <Button 
+              variant={condition === "lateEvening" ? "primary" : "secondary"} 
+              onClick={() => applyCondition("lateEvening")}
+            >
+              Late Evening
+            </Button>
+
+            <Text size="small" variant="bold">Simulate Weather Conditions</Text>
+            <Button 
+              variant={condition === "sunnyDay" ? "primary" : "secondary"} 
+              onClick={() => applyCondition("sunnyDay")}
+            >
+              Sunny Day
+            </Button>
+            <Button 
+              variant={condition === "gloomyDay" ? "primary" : "secondary"} 
+              onClick={() => applyCondition("gloomyDay")}
+            >
+              Gloomy Day
+            </Button>
+            <Button 
+              variant={condition === "underStars" ? "primary" : "secondary"} 
+              onClick={() => applyCondition("underStars")}
+            >
+              Under the Stars
+            </Button>
+
+            <Button variant="tertiary" disabled={!isImageReady} onClick={handleSave}>
               Save and Close
             </Button>
-            <Button variant="secondary" disabled={!isImageReady} onClick={handleClose}>
+            <Button variant="tertiary" disabled={!isImageReady} onClick={handleClose}>
               Close without Saving
             </Button>
           </Box>
@@ -144,7 +249,7 @@ function ObjectPanel() {
         <Box padding="2u">
           <Text size="small" variant="bold">Global Simulation</Text>
           <Text>Apply effects to the entire canvas.</Text>
-          <Button variant="primary" onClick={() => console.log("Apply Global Simulation")}>
+          <Button variant="primary" onClick={applyGlobalSimulation}>
             Apply Global Simulation
           </Button>
         </Box>
@@ -207,6 +312,8 @@ function SelectedImageOverlay() {
         applyRedGreenEffect(canvasRef.current);
       } else if (message === "removeRedGreen") {
         restoreOriginalImage(canvasRef.current, originalImageDataRef.current);
+      } else if (message.type === "applyCondition") {
+        applyConditionEffect(canvasRef.current, message.condition, originalImageDataRef.current);
       }
     });
   }, []);
@@ -343,6 +450,71 @@ function applyRedGreenEffect(canvas: HTMLCanvasElement | null) {
   }
 
   context!.putImageData(imageData, 0, 0);
+}
+
+// Function to apply condition effects (time of day or weather) to the image
+function applyConditionEffect(canvas: HTMLCanvasElement | null, condition: string, originalImageData: ImageData | null) {
+  if (!canvas || !originalImageData) return;
+  const context = canvas.getContext("2d");
+
+  restoreOriginalImage(canvas, originalImageData);
+
+  const imageData = context!.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  switch (condition) {
+    case "earlyMorning":
+      applyBrightnessAndTint(data, -20, 10, 5, 0); // Slightly lower brightness, warm tint
+      break;
+    case "morning":
+      applyBrightnessAndTint(data, 10, 5, 0, 0); // Slight increase in warmth
+      break;
+    case "midday":
+      applyBrightnessAndTint(data, 20, 0, 0, 0); // High brightness, neutral tones
+      break;
+    case "afternoon":
+      applyBrightnessAndTint(data, -10, 10, 0, 0); // Decreased brightness, warm tones
+      break;
+    case "evening":
+      applyBrightnessAndTint(data, -20, 0, 0, 10); // Low brightness, cooler tones
+      break;
+    case "lateEvening":
+      applyBrightnessAndTint(data, -30, 0, 0, 20); // Very low brightness, very cool tones
+      break;
+    case "sunnyDay":
+      applyBrightnessAndContrast(data, 20, 20); // Increased brightness and contrast
+      break;
+    case "gloomyDay":
+      applyBrightnessAndContrast(data, -20, -20); // Decreased brightness, lower contrast
+      break;
+    case "underStars":
+      applyBrightnessAndTint(data, -50, 0, 0, 50); // Very low brightness, deep blue tones
+      break;
+    default:
+      break;
+  }
+
+  context!.putImageData(imageData, 0, 0);
+}
+
+// Helper function to apply brightness and tint adjustments
+function applyBrightnessAndTint(data: Uint8ClampedArray, brightness: number, redTint: number, greenTint: number, blueTint: number) {
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = Math.min(Math.max(data[i] + brightness + redTint, 0), 255);
+    data[i + 1] = Math.min(Math.max(data[i + 1] + brightness + greenTint, 0), 255);
+    data[i + 2] = Math.min(Math.max(data[i + 2] + brightness + blueTint, 0), 255);
+  }
+}
+
+// Helper function to apply brightness and contrast adjustments
+function applyBrightnessAndContrast(data: Uint8ClampedArray, brightness: number, contrast: number) {
+  const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = Math.min(Math.max(factor * (data[i] - 128) + 128 + brightness, 0), 255);
+    data[i + 1] = Math.min(Math.max(factor * (data[i + 1] - 128) + 128 + brightness, 0), 255);
+    data[i + 2] = Math.min(Math.max(factor * (data[i + 2] - 128) + 128 + brightness, 0), 255);
+  }
 }
 
 // Function to restore the original image
