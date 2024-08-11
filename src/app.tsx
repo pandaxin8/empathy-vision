@@ -1,4 +1,4 @@
-import { Button, Rows, Text, Box } from "@canva/app-ui-kit";
+import { Button, Rows, Text, Box, Switch } from "@canva/app-ui-kit";
 import * as React from "react";
 import { appProcess } from "@canva/platform";
 import { useOverlay } from "utils/use_overlay_hook";
@@ -30,6 +30,9 @@ function ObjectPanel() {
   const overlay = useOverlay("image_selection");
   const [isImageReady, setIsImageReady] = React.useState(false);
   const [imageSelected, setImageSelected] = React.useState(false);
+  const [isGrayscale, setIsGrayscale] = React.useState(false);
+  const [isBlueYellow, setIsBlueYellow] = React.useState(false);
+  const [isRedGreen, setIsRedGreen] = React.useState(false);
 
   // Listen for messages broadcasted from the overlay to check if the image is ready
   React.useEffect(() => {
@@ -85,9 +88,23 @@ function ObjectPanel() {
     appProcess.broadcastMessage("applyBlur");
   };
 
-  // Function to broadcast a message to apply the color blindness effect to the selected image
-  const applyColorBlindness = (type) => {
-    appProcess.broadcastMessage(`applyColorBlindness-${type}`);
+  // Toggle functions for each type of color blindness
+  const toggleGrayscale = () => {
+    const newValue = !isGrayscale;
+    setIsGrayscale(newValue);
+    appProcess.broadcastMessage(newValue ? "applyGrayscale" : "removeGrayscale");
+  };
+
+  const toggleBlueYellow = () => {
+    const newValue = !isBlueYellow;
+    setIsBlueYellow(newValue);
+    appProcess.broadcastMessage(newValue ? "applyBlueYellow" : "removeBlueYellow");
+  };
+
+  const toggleRedGreen = () => {
+    const newValue = !isRedGreen;
+    setIsRedGreen(newValue);
+    appProcess.broadcastMessage(newValue ? "applyRedGreen" : "removeRedGreen");
   };
 
   // Function to open the image selection overlay
@@ -127,21 +144,23 @@ function ObjectPanel() {
           <Box padding="2u">
             <Text size="small" variant="bold">Apply Simulations</Text>
             <Text>Choose an effect to apply to the selected image.</Text>
-            <Button variant="primary" disabled={!isImageReady} onClick={applyBlur}>
-              Apply Blurriness
-            </Button>
-            <Button variant="primary" disabled={!isImageReady} onClick={() => applyColorBlindness('grayscale')}>
-              Apply Grayscale (Achromatopsia)
-            </Button>
-            <Button variant="primary" disabled={!isImageReady} onClick={() => applyColorBlindness('protanopia')}>
-              Apply Red-Blind (Protanopia)
-            </Button>
-            <Button variant="primary" disabled={!isImageReady} onClick={() => applyColorBlindness('deuteranopia')}>
-              Apply Green-Blind (Deuteranopia)
-            </Button>
-            <Button variant="primary" disabled={!isImageReady} onClick={() => applyColorBlindness('tritanopia')}>
-              Apply Blue-Yellow Blind (Tritanopia)
-            </Button>
+            
+            <Switch 
+              label="Grayscale" 
+              value={isGrayscale} 
+              onChange={toggleGrayscale} 
+            />
+            <Switch 
+              label="Blue-Yellow" 
+              value={isBlueYellow} 
+              onChange={toggleBlueYellow} 
+            />
+            <Switch 
+              label="Red-Green" 
+              value={isRedGreen} 
+              onChange={toggleRedGreen} 
+            />
+            
             <Button variant="secondary" disabled={!isImageReady} onClick={handleSave}>
               Save and Close
             </Button>
@@ -175,6 +194,7 @@ function ObjectPanel() {
 function SelectedImageOverlay() {
   const selection = useSelection("image");
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const originalImageDataRef = React.useRef<ImageData | null>(null);  // Store original image data
 
   React.useEffect(() => {
     const initializeCanvas = async () => {
@@ -192,6 +212,9 @@ function SelectedImageOverlay() {
       canvas.height = height;
       context.drawImage(img, 0, 0, width, height);
 
+      // Save the original image data for restoring later
+      originalImageDataRef.current = context.getImageData(0, 0, width, height);
+
       appProcess.broadcastMessage({ isImageReady: true });
     };
 
@@ -202,9 +225,18 @@ function SelectedImageOverlay() {
     appProcess.registerOnMessage((sender, message) => {
       if (message === "applyBlur") {
         applyBlurEffect(canvasRef.current);
-      } else if (message.startsWith("applyColorBlindness-")) {
-        const type = message.split("-")[1];
-        applyColorBlindnessEffect(canvasRef.current, type);
+      } else if (message === "applyGrayscale") {
+        applyGrayscaleEffect(canvasRef.current);
+      } else if (message === "removeGrayscale") {
+        restoreOriginalImage(canvasRef.current, originalImageDataRef.current);
+      } else if (message === "applyBlueYellow") {
+        applyBlueYellowEffect(canvasRef.current);
+      } else if (message === "removeBlueYellow") {
+        restoreOriginalImage(canvasRef.current, originalImageDataRef.current);
+      } else if (message === "applyRedGreen") {
+        applyRedGreenEffect(canvasRef.current);
+      } else if (message === "removeRedGreen") {
+        restoreOriginalImage(canvasRef.current, originalImageDataRef.current);
       }
     });
   }, []);
@@ -278,51 +310,70 @@ function applyBlurEffect(canvas: HTMLCanvasElement | null) {
   context.drawImage(canvas, 0, 0);
 }
 
-// Function to apply a color blindness effect to the image
-function applyColorBlindnessEffect(canvas: HTMLCanvasElement | null, type = 'grayscale') {
+// Function to apply a grayscale effect (simulating complete color blindness) to the image
+function applyGrayscaleEffect(canvas: HTMLCanvasElement | null) {
   if (!canvas) return;
   const context = canvas.getContext("2d");
+  if (!context) return;
+  context.filter = "grayscale(100%)";
+  context.drawImage(canvas, 0, 0);
+}
 
-  // Define color blindness matrices
-  const matrices = {
-    grayscale: [
-      [0.299, 0.587, 0.114],
-      [0.299, 0.587, 0.114],
-      [0.299, 0.587, 0.114]
-    ],
-    protanopia: [
-      [0.567, 0.433, 0.000],
-      [0.558, 0.442, 0.000],
-      [0.000, 0.242, 0.758]
-    ],
-    deuteranopia: [
-      [0.625, 0.375, 0.000],
-      [0.700, 0.300, 0.000],
-      [0.000, 0.300, 0.700]
-    ],
-    tritanopia: [
-      [0.950, 0.050, 0.000],
-      [0.000, 0.433, 0.567],
-      [0.000, 0.475, 0.525]
-    ]
-  };
-
-  const matrix = matrices[type];
-
+// Function to apply a blue-yellow color blindness effect to the image using matrix transformation
+function applyBlueYellowEffect(canvas: HTMLCanvasElement | null) {
+  if (!canvas) return;
+  const context = canvas.getContext("2d");
   const imageData = context!.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
 
-  // Apply the selected color blindness matrix to the image data
+  const tritanopiaMatrix = [
+    0.950, 0.050, 0.000,
+    0.000, 0.433, 0.567,
+    0.000, 0.475, 0.525,
+  ];
+
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
 
-    data[i] = matrix[0][0] * r + matrix[0][1] * g + matrix[0][2] * b;
-    data[i + 1] = matrix[1][0] * r + matrix[1][1] * g + matrix[1][2] * b;
-    data[i + 2] = matrix[2][0] * r + matrix[2][1] * g + matrix[2][2] * b;
+    data[i]     = tritanopiaMatrix[0] * r + tritanopiaMatrix[1] * g + tritanopiaMatrix[2] * b;
+    data[i + 1] = tritanopiaMatrix[3] * r + tritanopiaMatrix[4] * g + tritanopiaMatrix[5] * b;
+    data[i + 2] = tritanopiaMatrix[6] * r + tritanopiaMatrix[7] * g + tritanopiaMatrix[8] * b;
   }
 
-  // Put the modified image data back onto the canvas
   context!.putImageData(imageData, 0, 0);
+}
+
+// Function to apply a red-green color blindness effect to the image using matrix transformation
+function applyRedGreenEffect(canvas: HTMLCanvasElement | null) {
+  if (!canvas) return;
+  const context = canvas.getContext("2d");
+  const imageData = context!.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  const protanopiaMatrix = [
+    0.567, 0.433, 0.000,
+    0.558, 0.442, 0.000,
+    0.000, 0.242, 0.758,
+  ];
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+
+    data[i]     = protanopiaMatrix[0] * r + protanopiaMatrix[1] * g + protanopiaMatrix[2] * b;
+    data[i + 1] = protanopiaMatrix[3] * r + protanopiaMatrix[4] * g + protanopiaMatrix[5] * b;
+    data[i + 2] = protanopiaMatrix[6] * r + protanopiaMatrix[7] * g + protanopiaMatrix[8] * b;
+  }
+
+  context!.putImageData(imageData, 0, 0);
+}
+
+// Function to restore the original image
+function restoreOriginalImage(canvas: HTMLCanvasElement | null, originalImageData: ImageData | null) {
+  if (!canvas || !originalImageData) return;
+  const context = canvas.getContext("2d");
+  context!.putImageData(originalImageData, 0, 0);
 }
