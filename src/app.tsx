@@ -29,6 +29,7 @@ function ObjectPanel() {
   const [imageSelected, setImageSelected] = React.useState(false);
   const [file, setFile] = React.useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = React.useState<string | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = React.useState<string | null>(null);  // New state for preview URL
   const [isGrayscale, setIsGrayscale] = React.useState(false);
   const [isBlueYellow, setIsBlueYellow] = React.useState(false);
   const [isRedGreen, setIsRedGreen] = React.useState(false);
@@ -45,6 +46,10 @@ function ObjectPanel() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0] || null;
     setFile(selectedFile);
+    if (selectedFile) {
+      const previewUrl = URL.createObjectURL(selectedFile);
+      setImagePreviewUrl(previewUrl);  // Set the preview URL
+    }
   };
 
   const handleFileUpload = async () => {
@@ -78,7 +83,6 @@ function ObjectPanel() {
     }
   };
   
-
   const handleUseSelectedImage = async () => {
     const draft = await selection.read();
     const [image] = draft.contents;
@@ -184,12 +188,22 @@ function ObjectPanel() {
           <Text>Please select or upload an image to start applying effects.</Text>
           <input type="file" accept="image/*" onChange={handleFileChange} />
           <Button variant="secondary" onClick={handleFileUpload} disabled={!file}>
-            Use uploaded image
+            Upload image
           </Button>
-          <Button variant="secondary" disabled={!overlay.canOpen} onClick={handleOpen}>
+          <Button variant="secondary" disabled={!overlay.canOpen || !imageSelected} onClick={handleOpen}>
             Use selected image
           </Button>
         </Box>
+
+        {imagePreviewUrl && (  // Render the image preview if the preview URL is set
+          <Box padding="2u">
+            <Text size="small" variant="bold">Image Preview</Text>
+            <img src={imagePreviewUrl} alt="Preview" style={{ width: "100%", height: "auto" }} />
+            <Button variant="primary" onClick={() => addImageToDesign(uploadedImageUrl)} disabled={!uploadedImageUrl}>
+              Add to Design
+            </Button>
+          </Box>
+        )}
 
         {imageSelected && (
           <Accordion>
@@ -541,4 +555,28 @@ function restoreOriginalImage(canvas: HTMLCanvasElement | null, originalImageDat
   if (!canvas || !originalImageData) return;
   const context = canvas.getContext("2d");
   context!.putImageData(originalImageData, 0, 0);
+}
+
+function addImageToDesign(imageRef: string | null) {
+  if (!imageRef) return;
+
+  getCurrentPageContext().then((pageContext) => {
+    if (!pageContext?.dimensions) {
+      console.error("Could not get page dimensions");
+      return;
+    }
+
+    const { width, height } = pageContext.dimensions;
+
+    addNativeElement({
+      type: "IMAGE",
+      ref: imageRef,
+      width: width,
+      height: height,
+      top: 0,
+      left: 0,
+    }).then(() => {
+      console.log("Image added to design.");
+    });
+  });
 }
