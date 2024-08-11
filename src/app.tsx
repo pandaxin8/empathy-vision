@@ -1,4 +1,4 @@
-import { Button, Rows, Text, Box, Switch } from "@canva/app-ui-kit";
+import { Button, Rows, Text, Box, Switch, Slider } from "@canva/app-ui-kit";
 import * as React from "react";
 import { appProcess } from "@canva/platform";
 import { useOverlay } from "utils/use_overlay_hook";
@@ -33,6 +33,7 @@ function ObjectPanel() {
   const [isGrayscale, setIsGrayscale] = React.useState(false);
   const [isBlueYellow, setIsBlueYellow] = React.useState(false);
   const [isRedGreen, setIsRedGreen] = React.useState(false);
+  const [blurLevel, setBlurLevel] = React.useState(0);
 
   // Listen for messages broadcasted from the overlay to check if the image is ready
   React.useEffect(() => {
@@ -41,52 +42,6 @@ function ObjectPanel() {
       setImageSelected(Boolean(message.isImageReady));
     });
   }, []);
-
-  // Function to apply a global color blindness simulation overlay to the entire canvas
-  const applyGlobalColorBlindnessOverlay = async () => {
-    console.log("Applying global color blindness overlay...");
-
-    const pageContext = await getCurrentPageContext();
-    if (!pageContext?.dimensions) {
-      console.error("Could not get page dimensions");
-      return;
-    }
-
-    const { width, height } = pageContext.dimensions;
-
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
-
-    canvas.width = width;
-    canvas.height = height;
-    context!.fillStyle = "rgba(128, 128, 128, 0.5)";
-    context!.fillRect(0, 0, width, height);
-
-    const dataUrl = canvas.toDataURL("image/png");
-
-    const asset = await upload({
-      type: "IMAGE",
-      mimeType: "image/png",
-      url: dataUrl,
-      thumbnailUrl: dataUrl,
-    });
-
-    await addNativeElement({
-      type: "IMAGE",
-      ref: asset.ref,
-      width: width,
-      height: height,
-      top: 0,
-      left: 0,
-    });
-
-    console.log("Color blindness overlay applied.");
-  };
-
-  // Function to broadcast a message to apply the blur effect to the selected image
-  const applyBlur = () => {
-    appProcess.broadcastMessage("applyBlur");
-  };
 
   // Toggle functions for each type of color blindness
   const toggleGrayscale = () => {
@@ -105,6 +60,12 @@ function ObjectPanel() {
     const newValue = !isRedGreen;
     setIsRedGreen(newValue);
     appProcess.broadcastMessage(newValue ? "applyRedGreen" : "removeRedGreen");
+  };
+
+  // Function to update blur level
+  const updateBlurLevel = (level: number) => {
+    setBlurLevel(level);
+    appProcess.broadcastMessage({ type: "applyBlur", level });
   };
 
   // Function to open the image selection overlay
@@ -146,20 +107,29 @@ function ObjectPanel() {
             <Text>Choose an effect to apply to the selected image.</Text>
             
             <Switch 
-              label="Grayscale" 
+              label="Complete colour blindness" 
               value={isGrayscale} 
               onChange={toggleGrayscale} 
             />
             <Switch 
-              label="Blue-Yellow" 
+              label="Blue-Yellow colour blindness" 
               value={isBlueYellow} 
               onChange={toggleBlueYellow} 
             />
             <Switch 
-              label="Red-Green" 
+              label="Red-Green colour blindness" 
               value={isRedGreen} 
               onChange={toggleRedGreen} 
             />
+            <Box padding="2u">
+              <Text size="small" variant="bold">Blurriness Level</Text>
+              <Slider 
+                min={0} 
+                max={10} 
+                value={blurLevel} 
+                onChange={updateBlurLevel} 
+              />
+            </Box>
             
             <Button variant="secondary" disabled={!isImageReady} onClick={handleSave}>
               Save and Close
@@ -174,7 +144,7 @@ function ObjectPanel() {
         <Box padding="2u">
           <Text size="small" variant="bold">Global Simulation</Text>
           <Text>Apply effects to the entire canvas.</Text>
-          <Button variant="primary" onClick={applyGlobalColorBlindnessOverlay}>
+          <Button variant="primary" onClick={() => console.log("Apply Global Simulation")}>
             Apply Global Simulation
           </Button>
         </Box>
@@ -223,8 +193,8 @@ function SelectedImageOverlay() {
 
   React.useEffect(() => {
     appProcess.registerOnMessage((sender, message) => {
-      if (message === "applyBlur") {
-        applyBlurEffect(canvasRef.current);
+      if (message.type === "applyBlur") {
+        applyBlurEffect(canvasRef.current, message.level, originalImageDataRef.current);
       } else if (message === "applyGrayscale") {
         applyGrayscaleEffect(canvasRef.current);
       } else if (message === "removeGrayscale") {
@@ -301,13 +271,17 @@ function getCanvas(canvas: HTMLCanvasElement | null) {
   return { canvas, context };
 }
 
-// Function to apply a blur effect to the image
-function applyBlurEffect(canvas: HTMLCanvasElement | null) {
-  if (!canvas) return;
+// Function to apply a blur effect to the image based on level
+function applyBlurEffect(canvas: HTMLCanvasElement | null, level: number, originalImageData: ImageData | null) {
+  if (!canvas || !originalImageData) return;
   const context = canvas.getContext("2d");
-  if (!context) return;
-  context.filter = "blur(5px)";
-  context.drawImage(canvas, 0, 0);
+
+  // Restore the original image first
+  restoreOriginalImage(canvas, originalImageData);
+
+  // Now apply the blur effect based on the level
+  context!.filter = `blur(${level}px)`;
+  context!.drawImage(canvas, 0, 0);
 }
 
 // Function to apply a grayscale effect (simulating complete color blindness) to the image
