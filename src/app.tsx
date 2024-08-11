@@ -8,36 +8,33 @@ import { useSelection } from "utils/use_selection_hook";
 import styles from "styles/components.css";
 import { WbSunny, Brightness3, Cloud, Brightness6, NightsStay, BeachAccess, WbTwilight } from '@mui/icons-material';
 
-// Main App component that decides which surface (Object Panel or Selected Image Overlay) to render
 export function App() {
   const context = appProcess.current.getInfo();
 
-  // Check if the current surface is the Object Panel
   if (context.surface === "object_panel") {
     return <ObjectPanel />;
   }
 
-  // Check if the current surface is the Selected Image Overlay
   if (context.surface === "selected_image_overlay") {
     return <SelectedImageOverlay />;
   }
 
-  // Handle unexpected surface types
   throw new Error(`Invalid surface: ${context.surface}`);
 }
 
-// Component for the Object Panel where users interact with the app
 function ObjectPanel() {
   const overlay = useOverlay("image_selection");
+  const selection = useSelection("image");
   const [isImageReady, setIsImageReady] = React.useState(false);
   const [imageSelected, setImageSelected] = React.useState(false);
+  const [file, setFile] = React.useState<File | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = React.useState<string | null>(null);
   const [isGrayscale, setIsGrayscale] = React.useState(false);
   const [isBlueYellow, setIsBlueYellow] = React.useState(false);
   const [isRedGreen, setIsRedGreen] = React.useState(false);
   const [blurLevel, setBlurLevel] = React.useState(0);
   const [condition, setCondition] = React.useState<string | null>(null);
 
-  // Listen for messages broadcasted from the overlay to check if the image is ready
   React.useEffect(() => {
     appProcess.registerOnMessage((sender, message) => {
       setIsImageReady(Boolean(message.isImageReady));
@@ -45,7 +42,55 @@ function ObjectPanel() {
     });
   }, []);
 
-  // Toggle functions for each type of color blindness
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0] || null;
+    setFile(selectedFile);
+  };
+
+  const handleFileUpload = async () => {
+    if (file) {
+      try {
+        // Convert the file to a blob and then upload it
+        const reader = new FileReader();
+        
+        reader.onload = async (event) => {
+          if (event.target?.result) {
+            const image = await upload({
+              type: "IMAGE",
+              mimeType: file.type,
+              url: event.target.result as string,
+              thumbnailUrl: event.target.result as string,
+            });
+  
+            setUploadedImageUrl(image.ref);
+            setImageSelected(true);
+            console.log("The asset reference is", image.ref);
+            await image.whenUploaded();
+            console.log("The upload is complete.");
+          }
+        };
+        
+        reader.readAsDataURL(file);
+        
+      } catch (error) {
+        console.error("Error uploading the image: ", error);
+      }
+    }
+  };
+  
+
+  const handleUseSelectedImage = async () => {
+    const draft = await selection.read();
+    const [image] = draft.contents;
+
+    if (!image) return;
+
+    const { url } = await getTemporaryUrl({ type: "IMAGE", ref: image.ref });
+    setUploadedImageUrl(url);
+    setImageSelected(true);
+    appProcess.broadcastMessage({ isImageReady: true });
+  };
+
   const toggleGrayscale = () => {
     const newValue = !isGrayscale;
     setIsGrayscale(newValue);
@@ -64,19 +109,16 @@ function ObjectPanel() {
     appProcess.broadcastMessage(newValue ? "applyRedGreen" : "removeRedGreen");
   };
 
-  // Function to update blur level
   const updateBlurLevel = (level: number) => {
     setBlurLevel(level);
     appProcess.broadcastMessage({ type: "applyBlur", level });
   };
 
-  // Function to apply simulation effects based on the selected condition
   const applyCondition = (newCondition: string) => {
     setCondition(newCondition);
     appProcess.broadcastMessage({ type: "applyCondition", condition: newCondition });
   };
 
-  // Function to apply global simulation effects
   const applyGlobalSimulation = async () => {
     console.log("Applying global color blindness overlay...");
 
@@ -117,17 +159,14 @@ function ObjectPanel() {
     console.log("Color blindness overlay applied.");
   };
 
-  // Function to open the image selection overlay
   const handleOpen = () => {
     overlay.open();
   };
 
-  // Function to save and close the overlay after applying the simulation
   const handleSave = () => {
     overlay.close({ reason: "completed" });
   };
 
-  // Function to close the overlay without saving changes
   const handleClose = () => {
     overlay.close({ reason: "aborted" });
   };
@@ -143,8 +182,12 @@ function ObjectPanel() {
         <Box padding="2u">
           <Text size="small" variant="bold">Image Selection</Text>
           <Text>Please select or upload an image to start applying effects.</Text>
+          <input type="file" accept="image/*" onChange={handleFileChange} />
+          <Button variant="secondary" onClick={handleFileUpload} disabled={!file}>
+            Use uploaded image
+          </Button>
           <Button variant="secondary" disabled={!overlay.canOpen} onClick={handleOpen}>
-            Select or Upload Image
+            Use selected image
           </Button>
         </Box>
 
@@ -255,11 +298,10 @@ function ObjectPanel() {
   );
 }
 
-// Component for the Selected Image Overlay where simulations are applied directly to the image
 function SelectedImageOverlay() {
   const selection = useSelection("image");
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
-  const originalImageDataRef = React.useRef<ImageData | null>(null);  // Store original image data
+  const originalImageDataRef = React.useRef<ImageData | null>(null);
 
   React.useEffect(() => {
     const initializeCanvas = async () => {
@@ -277,7 +319,6 @@ function SelectedImageOverlay() {
       canvas.height = height;
       context.drawImage(img, 0, 0, width, height);
 
-      // Save the original image data for restoring later
       originalImageDataRef.current = context.getImageData(0, 0, width, height);
 
       appProcess.broadcastMessage({ isImageReady: true });
@@ -333,7 +374,6 @@ function SelectedImageOverlay() {
   return <canvas ref={canvasRef} style={{ width: "100%", height: "100%" }} />;
 }
 
-// Helper function to download an image
 async function downloadImage(url: string) {
   const response = await fetch(url, { mode: "cors" });
   const blob = await response.blob();
@@ -353,7 +393,6 @@ async function downloadImage(url: string) {
   return img;
 }
 
-// Helper function to get the canvas and its 2D rendering context
 function getCanvas(canvas: HTMLCanvasElement | null) {
   if (!canvas) {
     throw new Error("HTMLCanvasElement does not exist");
@@ -368,20 +407,16 @@ function getCanvas(canvas: HTMLCanvasElement | null) {
   return { canvas, context };
 }
 
-// Function to apply a blur effect to the image based on level
 function applyBlurEffect(canvas: HTMLCanvasElement | null, level: number, originalImageData: ImageData | null) {
   if (!canvas || !originalImageData) return;
   const context = canvas.getContext("2d");
 
-  // Restore the original image first
   restoreOriginalImage(canvas, originalImageData);
 
-  // Now apply the blur effect based on the level
   context!.filter = `blur(${level}px)`;
   context!.drawImage(canvas, 0, 0);
 }
 
-// Function to apply a grayscale effect (simulating complete color blindness) to the image
 function applyGrayscaleEffect(canvas: HTMLCanvasElement | null) {
   if (!canvas) return;
   const context = canvas.getContext("2d");
@@ -390,7 +425,6 @@ function applyGrayscaleEffect(canvas: HTMLCanvasElement | null) {
   context.drawImage(canvas, 0, 0);
 }
 
-// Function to apply a blue-yellow color blindness effect to the image using matrix transformation
 function applyBlueYellowEffect(canvas: HTMLCanvasElement | null) {
   if (!canvas) return;
   const context = canvas.getContext("2d");
@@ -416,7 +450,6 @@ function applyBlueYellowEffect(canvas: HTMLCanvasElement | null) {
   context!.putImageData(imageData, 0, 0);
 }
 
-// Function to apply a red-green color blindness effect to the image using matrix transformation
 function applyRedGreenEffect(canvas: HTMLCanvasElement | null) {
   if (!canvas) return;
   const context = canvas.getContext("2d");
@@ -442,7 +475,6 @@ function applyRedGreenEffect(canvas: HTMLCanvasElement | null) {
   context!.putImageData(imageData, 0, 0);
 }
 
-// Function to apply condition effects (time of day or weather) to the image
 function applyConditionEffect(canvas: HTMLCanvasElement | null, condition: string, originalImageData: ImageData | null) {
   if (!canvas || !originalImageData) return;
   const context = canvas.getContext("2d");
@@ -487,7 +519,6 @@ function applyConditionEffect(canvas: HTMLCanvasElement | null, condition: strin
   context!.putImageData(imageData, 0, 0);
 }
 
-// Helper function to apply brightness and tint adjustments
 function applyBrightnessAndTint(data: Uint8ClampedArray, brightness: number, redTint: number, greenTint: number, blueTint: number) {
   for (let i = 0; i < data.length; i += 4) {
     data[i] = Math.min(Math.max(data[i] + brightness + redTint, 0), 255);
@@ -496,7 +527,6 @@ function applyBrightnessAndTint(data: Uint8ClampedArray, brightness: number, red
   }
 }
 
-// Helper function to apply brightness and contrast adjustments
 function applyBrightnessAndContrast(data: Uint8ClampedArray, brightness: number, contrast: number) {
   const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
 
@@ -507,7 +537,6 @@ function applyBrightnessAndContrast(data: Uint8ClampedArray, brightness: number,
   }
 }
 
-// Function to restore the original image
 function restoreOriginalImage(canvas: HTMLCanvasElement | null, originalImageData: ImageData | null) {
   if (!canvas || !originalImageData) return;
   const context = canvas.getContext("2d");
