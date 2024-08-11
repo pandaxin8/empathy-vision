@@ -1,4 +1,4 @@
-import { Button, Rows, Text, Box, Switch, Slider } from "@canva/app-ui-kit";
+import { Button, Rows, Text, Box, Switch, Slider, Accordion, AccordionItem } from "@canva/app-ui-kit";
 import * as React from "react";
 import { appProcess } from "@canva/platform";
 import { useOverlay } from "utils/use_overlay_hook";
@@ -6,6 +6,7 @@ import { getTemporaryUrl, upload } from "@canva/asset";
 import { addNativeElement, getCurrentPageContext } from "@canva/design";
 import { useSelection } from "utils/use_selection_hook";
 import styles from "styles/components.css";
+import { WbSunny, Brightness3, Cloud, Brightness6, NightsStay, BeachAccess, WbTwilight } from '@mui/icons-material';
 
 // Main App component that decides which surface (Object Panel or Selected Image Overlay) to render
 export function App() {
@@ -148,101 +149,90 @@ function ObjectPanel() {
         </Box>
 
         {imageSelected && (
-          <Box padding="2u">
-            <Text size="small" variant="bold">Apply Simulations</Text>
-            <Text>Choose an effect to apply to the selected image.</Text>
-            
-            <Switch 
-              label="Complete colour blindness" 
-              value={isGrayscale} 
-              onChange={toggleGrayscale} 
-            />
-            <Switch 
-              label="Blue-Yellow colour blindness" 
-              value={isBlueYellow} 
-              onChange={toggleBlueYellow} 
-            />
-            <Switch 
-              label="Red-Green colour blindness" 
-              value={isRedGreen} 
-              onChange={toggleRedGreen} 
-            />
-            <Box padding="2u">
-              <Text size="small" variant="bold">Blurriness Level</Text>
-              <Slider 
-                min={0} 
-                max={10} 
-                value={blurLevel} 
-                onChange={updateBlurLevel} 
+          <Accordion>
+            <AccordionItem title="Apply Simulations">
+              <Text>Choose an effect to apply to the selected image.</Text>
+              
+              <Switch 
+                label="Complete colour blindness" 
+                value={isGrayscale} 
+                onChange={toggleGrayscale} 
               />
-            </Box>
+              <Switch 
+                label="Blue-Yellow colour blindness" 
+                value={isBlueYellow} 
+                onChange={toggleBlueYellow} 
+              />
+              <Switch 
+                label="Red-Green colour blindness" 
+                value={isRedGreen} 
+                onChange={toggleRedGreen} 
+              />
+              <Box padding="2u">
+                <Text size="small" variant="bold">Blurriness Level</Text>
+                <Slider 
+                  min={0} 
+                  max={10} 
+                  value={blurLevel} 
+                  onChange={updateBlurLevel} 
+                />
+              </Box>
+            </AccordionItem>
 
-            {/* Time of Day and Weather Condition Buttons */}
-            <Text size="small" variant="bold">Simulate Time of Day</Text>
-            <Button 
-              variant={condition === "earlyMorning" ? "primary" : "secondary"} 
-              onClick={() => applyCondition("earlyMorning")}
-            >
-              Early Morning
-            </Button>
-            <Button 
-              variant={condition === "morning" ? "primary" : "secondary"} 
-              onClick={() => applyCondition("morning")}
-            >
-              Morning
-            </Button>
-            <Button 
-              variant={condition === "midday" ? "primary" : "secondary"} 
-              onClick={() => applyCondition("midday")}
-            >
-              Midday
-            </Button>
-            <Button 
-              variant={condition === "afternoon" ? "primary" : "secondary"} 
-              onClick={() => applyCondition("afternoon")}
-            >
-              Afternoon
-            </Button>
-            <Button 
-              variant={condition === "evening" ? "primary" : "secondary"} 
-              onClick={() => applyCondition("evening")}
-            >
-              Evening
-            </Button>
-            <Button 
-              variant={condition === "lateEvening" ? "primary" : "secondary"} 
-              onClick={() => applyCondition("lateEvening")}
-            >
-              Late Evening
-            </Button>
+            <AccordionItem title="Simulate Time of Day">
+              <Button variant={condition === "earlyMorning" ? "primary" : "secondary"} onClick={() => applyCondition("earlyMorning")}>
+                <WbTwilight /> Early Morning
+              </Button>
+              <Button variant={condition === "morning" ? "primary" : "secondary"} onClick={() => applyCondition("morning")}>
+                <WbSunny /> Morning
+              </Button>
+              <Button 
+                variant={condition === "midday" ? "primary" : "secondary"} 
+                onClick={() => applyCondition("midday")}
+              >
+                <Brightness6 /> Midday
+              </Button>
+              <Button 
+                variant={condition === "afternoon" ? "primary" : "secondary"} 
+                onClick={() => applyCondition("afternoon")}
+              >
+                <Brightness6 /> Afternoon
+              </Button>
+              <Button 
+                variant={condition === "evening" ? "primary" : "secondary"} 
+                onClick={() => applyCondition("evening")}
+              >
+                <NightsStay /> Evening
+              </Button>
+              <Button 
+                variant={condition === "lateEvening" ? "primary" : "secondary"} 
+                onClick={() => applyCondition("lateEvening")}
+              >
+                <Brightness3 /> Late Evening
+              </Button>
+            </AccordionItem>
 
-            <Text size="small" variant="bold">Simulate Weather Conditions</Text>
-            <Button 
-              variant={condition === "sunnyDay" ? "primary" : "secondary"} 
-              onClick={() => applyCondition("sunnyDay")}
-            >
-              Sunny Day
-            </Button>
-            <Button 
-              variant={condition === "gloomyDay" ? "primary" : "secondary"} 
-              onClick={() => applyCondition("gloomyDay")}
-            >
-              Gloomy Day
-            </Button>
-            <Button 
-              variant={condition === "underStars" ? "primary" : "secondary"} 
-              onClick={() => applyCondition("underStars")}
-            >
-              Under the Stars
-            </Button>
-
-            <Button variant="tertiary" disabled={!isImageReady} onClick={handleSave}>
-              Save and Close
-            </Button>
-            <Button variant="tertiary" disabled={!isImageReady} onClick={handleClose}>
-              Close without Saving
-            </Button>
-          </Box>
+            <AccordionItem title="Simulate Weather Conditions">
+              <Button 
+                variant={condition === "sunnyDay" ? "primary" : "secondary"} 
+                onClick={() => applyCondition("sunnyDay")}
+              >
+                <WbSunny /> Sunny Day
+              </Button>
+              <Button 
+                variant={condition === "gloomyDay" ? "primary" : "secondary"} 
+                onClick={() => applyCondition("gloomyDay")}
+              >
+                <Cloud /> Gloomy Day
+              </Button>
+              <Button 
+                variant={condition === "underStars" ? "primary" : "secondary"} 
+                onClick={() => applyCondition("underStars")}
+              >
+                <BeachAccess /> Under the Stars
+              </Button>
+            </AccordionItem>
+          </Accordion>
         )}
 
         {/* Global Simulation Section */}
