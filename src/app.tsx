@@ -86,8 +86,8 @@ function ObjectPanel() {
   };
 
   // Function to broadcast a message to apply the color blindness effect to the selected image
-  const applyColorBlindness = () => {
-    appProcess.broadcastMessage("applyColorBlindness");
+  const applyColorBlindness = (type) => {
+    appProcess.broadcastMessage(`applyColorBlindness-${type}`);
   };
 
   // Function to open the image selection overlay
@@ -130,8 +130,17 @@ function ObjectPanel() {
             <Button variant="primary" disabled={!isImageReady} onClick={applyBlur}>
               Apply Blurriness
             </Button>
-            <Button variant="primary" disabled={!isImageReady} onClick={applyColorBlindness}>
-              Apply Color Blindness
+            <Button variant="primary" disabled={!isImageReady} onClick={() => applyColorBlindness('grayscale')}>
+              Apply Grayscale (Achromatopsia)
+            </Button>
+            <Button variant="primary" disabled={!isImageReady} onClick={() => applyColorBlindness('protanopia')}>
+              Apply Red-Blind (Protanopia)
+            </Button>
+            <Button variant="primary" disabled={!isImageReady} onClick={() => applyColorBlindness('deuteranopia')}>
+              Apply Green-Blind (Deuteranopia)
+            </Button>
+            <Button variant="primary" disabled={!isImageReady} onClick={() => applyColorBlindness('tritanopia')}>
+              Apply Blue-Yellow Blind (Tritanopia)
             </Button>
             <Button variant="secondary" disabled={!isImageReady} onClick={handleSave}>
               Save and Close
@@ -193,8 +202,9 @@ function SelectedImageOverlay() {
     appProcess.registerOnMessage((sender, message) => {
       if (message === "applyBlur") {
         applyBlurEffect(canvasRef.current);
-      } else if (message === "applyColorBlindness") {
-        applyColorBlindnessEffect(canvasRef.current);
+      } else if (message.startsWith("applyColorBlindness-")) {
+        const type = message.split("-")[1];
+        applyColorBlindnessEffect(canvasRef.current, type);
       }
     });
   }, []);
@@ -268,11 +278,51 @@ function applyBlurEffect(canvas: HTMLCanvasElement | null) {
   context.drawImage(canvas, 0, 0);
 }
 
-// Function to apply a grayscale effect (simulating color blindness) to the image
-function applyColorBlindnessEffect(canvas: HTMLCanvasElement | null) {
+// Function to apply a color blindness effect to the image
+function applyColorBlindnessEffect(canvas: HTMLCanvasElement | null, type = 'grayscale') {
   if (!canvas) return;
   const context = canvas.getContext("2d");
-  if (!context) return;
-  context.filter = "grayscale(100%)";
-  context.drawImage(canvas, 0, 0);
+
+  // Define color blindness matrices
+  const matrices = {
+    grayscale: [
+      [0.299, 0.587, 0.114],
+      [0.299, 0.587, 0.114],
+      [0.299, 0.587, 0.114]
+    ],
+    protanopia: [
+      [0.567, 0.433, 0.000],
+      [0.558, 0.442, 0.000],
+      [0.000, 0.242, 0.758]
+    ],
+    deuteranopia: [
+      [0.625, 0.375, 0.000],
+      [0.700, 0.300, 0.000],
+      [0.000, 0.300, 0.700]
+    ],
+    tritanopia: [
+      [0.950, 0.050, 0.000],
+      [0.000, 0.433, 0.567],
+      [0.000, 0.475, 0.525]
+    ]
+  };
+
+  const matrix = matrices[type];
+
+  const imageData = context!.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  // Apply the selected color blindness matrix to the image data
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+
+    data[i] = matrix[0][0] * r + matrix[0][1] * g + matrix[0][2] * b;
+    data[i + 1] = matrix[1][0] * r + matrix[1][1] * g + matrix[1][2] * b;
+    data[i + 2] = matrix[2][0] * r + matrix[2][1] * g + matrix[2][2] * b;
+  }
+
+  // Put the modified image data back onto the canvas
+  context!.putImageData(imageData, 0, 0);
 }
