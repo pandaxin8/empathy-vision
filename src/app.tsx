@@ -224,13 +224,13 @@ function ObjectPanel() {
   return (
     <div className={styles.scrollContainer}>
       <Rows spacing="2u">
-        <Text size="medium" variant="bold">
+        <Text size="large" variant="bold">
           Visual Simulations
         </Text>
         <Text>Simulate different visual impairments and lighting conditions on your design elements.</Text>
 
         <Tabs>
-          <Rows spacing="1u">
+          <Rows spacing="2u">
             <TabList>
               <Tab id="presets">
                 Presets
@@ -255,11 +255,11 @@ function ObjectPanel() {
                 </Text>
               </TabPanel>
               <TabPanel id="settings">
-                <Box padding="2u">
+                <Box padding="3u">
                   <Text size="small" variant="bold">Apply Simulations</Text>
                   <Text>Choose an effect to apply to the selected image.</Text>
 
-                  <Switch
+                  {/* <Switch
                     label="Complete colour blindness"
                     value={isGrayscale}
                     onChange={toggleGrayscale}
@@ -273,16 +273,41 @@ function ObjectPanel() {
                     label="Red-Green colour blindness"
                     value={isRedGreen}
                     onChange={toggleRedGreen}
-                  />
-                  <Box padding="2u">
-                    <Text size="small" variant="bold">Blurriness Level</Text>
-                    <Slider
-                      min={0}
-                      max={10}
-                      value={blurLevel}
-                      onChange={updateBlurLevel}
-                    />
-                  </Box>
+                  /> */}
+
+                  <AccordionItem title="Color Blindness Simulations">
+                      <Box padding="2u"> 
+                          <Switch
+                              label="Complete colour blindness"
+                              value={isGrayscale}
+                              onChange={toggleGrayscale}
+                          />
+                          <Switch
+                              label="Blue-Yellow colour blindness"
+                              value={isBlueYellow}
+                              onChange={toggleBlueYellow}
+                          />
+                          <Switch
+                              label="Red-Green colour blindness"
+                              value={isRedGreen}
+                              onChange={toggleRedGreen}
+                          />
+                      </Box>
+                  </AccordionItem>
+
+
+                  <AccordionItem title="Blurry Vision Simulation">
+                    <Box padding="2u">
+                      <Text size="small" variant="bold">Blurriness Level</Text>
+                      <Slider
+                        min={0}
+                        max={10}
+                        value={blurLevel}
+                        onChange={updateBlurLevel}
+                      />
+                    </Box>
+                  </AccordionItem>
+                  
 
                   <Button variant="secondary" disabled={!isImageReady} onClick={handleSave}>
                     Save and Close
@@ -296,20 +321,23 @@ function ObjectPanel() {
           </Rows>
         </Tabs>
 
-        <Box padding="2u">
-          <Text size="small" variant="bold">Image Selection</Text>
+        <Box padding="3u" border="standard" borderRadius="standard">
+        <Rows spacing="2u">
+          <Text size="medium" variant="bold">Image Selection</Text>
           <Text>Please select or upload an image to start applying effects.</Text>
           <input type="file" accept="image/*" onChange={handleFileChange} />
           <Button variant="secondary" onClick={handleFileUpload} disabled={!file}>
-            Upload image
+              Upload image
           </Button>
           <Button variant="secondary" disabled={!overlay.canOpen || !imageSelected} onClick={handleOpen}>
-            Use selected image
+              Use selected image
           </Button>
-        </Box>
+          </Rows>
+      </Box>
+
 
         {imagePreviewUrl && (  // Render the image preview if the preview URL is set
-          <Box padding="2u">
+          <Box padding="3u">
             <Text size="small" variant="bold">Image Preview</Text>
             <img src={imagePreviewUrl} alt="Preview" style={{ width: "100%", height: "auto" }} />
             <Button variant="primary" onClick={() => addImageToDesign(uploadedImageUrl)} disabled={!uploadedImageUrl}>
@@ -338,7 +366,7 @@ function ObjectPanel() {
                 value={isRedGreen} 
                 onChange={toggleRedGreen} 
               />
-              <Box padding="2u">
+              <Box padding="3u">
                 <Text size="small" variant="bold">Blurriness Level</Text>
                 <Slider 
                   min={0} 
@@ -414,17 +442,17 @@ function ObjectPanel() {
         )}
 
         {/* Global Simulation Section */}
-        <Box padding="2u">
+        {/* <Box padding="2u">
           <Text size="small" variant="bold">Global Simulation</Text>
           <Text>Apply effects to the entire canvas.</Text>
           <Button variant="primary" onClick={applyGlobalSimulation}>
             Apply Global Simulation
           </Button>
-        </Box>
+        </Box> */}
 
         {/* Reset Filters */}
-        <Box padding="2u">
-          <Button variant="primary" onClick={handleResetFilters}>
+        <Box padding="3u" alignItems="center">
+          <Button variant="primary" onClick={handleResetFilters} alignment="center">
             Reset Filters
           </Button>
         </Box>
