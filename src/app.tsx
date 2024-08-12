@@ -681,23 +681,34 @@ function restoreOriginalImage(canvas: HTMLCanvasElement | null, originalImageDat
 function addImageToDesign(imageRef: string | null) {
   if (!imageRef) return;
 
-  getCurrentPageContext().then((pageContext) => {
-    if (!pageContext?.dimensions) {
-      console.error("Could not get page dimensions");
-      return;
-    }
+  // Try to download the image to get its original size
+  downloadImage(imageRef).then((img) => {
+    const originalWidth = img.width;
+    const originalHeight = img.height;
 
-    const { width, height } = pageContext.dimensions;
-
+    // Add the image to the design with its original dimensions
     addNativeElement({
       type: "IMAGE",
       ref: imageRef,
-      width: width,
-      height: height,
+      width: originalWidth,
+      height: originalHeight,
       top: 0,
       left: 0,
     }).then(() => {
-      console.log("Image added to design.");
+      console.log("Image added to design at its original size.");
+    });
+  }).catch((error) => {
+    console.error("Failed to download the image for size extraction:", error);
+    // Fallback: Add the image with default dimensions
+    addNativeElement({
+      type: "IMAGE",
+      ref: imageRef,
+      width: 200, // Default width
+      height: 200, // Default height
+      top: 0,
+      left: 0,
+    }).then(() => {
+      console.log("Image added to design with default size due to error.");
     });
   });
 }
