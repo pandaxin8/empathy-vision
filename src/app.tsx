@@ -35,6 +35,7 @@ function ObjectPanel() {
   const [isRedGreen, setIsRedGreen] = React.useState(false);
   const [blurLevel, setBlurLevel] = React.useState(0);
   const [condition, setCondition] = React.useState<string | null>(null);
+  const [personality, setPersonality] = React.useState(0); 
 
   React.useEffect(() => {
     appProcess.registerOnMessage((sender, message) => {
@@ -54,6 +55,13 @@ function ObjectPanel() {
     };
     checkImageSelection();
   }, [selection]);
+
+  const togglePeronsality = (newPersonality: number) => {
+    if (personality == newPersonality)
+        setPersonality(0); 
+    else 
+      setPersonality(newPersonality); 
+  }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0] || null;
