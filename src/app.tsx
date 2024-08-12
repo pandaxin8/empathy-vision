@@ -29,7 +29,7 @@ function ObjectPanel() {
   const [imageSelected, setImageSelected] = React.useState(false);
   const [file, setFile] = React.useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = React.useState<string | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = React.useState<string | null>(null);  // New state for preview URL
+  const [imagePreviewUrl, setImagePreviewUrl] = React.useState<string | null>(null);
   const [isGrayscale, setIsGrayscale] = React.useState(false);
   const [isBlueYellow, setIsBlueYellow] = React.useState(false);
   const [isRedGreen, setIsRedGreen] = React.useState(false);
@@ -42,6 +42,18 @@ function ObjectPanel() {
       setImageSelected(Boolean(message.isImageReady));
     });
   }, []);
+
+  React.useEffect(() => {
+    // Ensure that imageSelected is true if an image is selected from the user's design
+    const checkImageSelection = async () => {
+      const draft = await selection.read();
+      const [image] = draft.contents;
+      if (image) {
+        setImageSelected(true);
+      }
+    };
+    checkImageSelection();
+  }, [selection]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0] || null;
