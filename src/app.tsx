@@ -37,13 +37,16 @@ function ObjectPanel() {
   const [condition, setCondition] = React.useState<string | null>(null);
   const [personality, setPersonality] = React.useState(0); 
   const [showSimulations, setShowSimulations] = React.useState(false);
+  const [presetMessage, setPresetMessage] = React.useState<string | null>(null);
+  const [showSaveButton, setShowSaveButton] = React.useState(false);
+
 
 
   const descriptions = ["Select a character! Each one sees the world differently.", 
     "Chad is 6ft tall and plays rugby. Unbeknowest to his friends he can't see very well without glasses.", 
   "Professor Xavier teaches quantum physics by day but has difficulty seeing at night.",
 "Sonic is a ball of energy and sees the world in different colors.",
-"Custom Presets: Coming Soon!", "Custom Presets: Coming Soon!", "Custom Presets: Coming Soon!"]; 
+"Ava loves reading but struggles with literature containing small words.", "Rob loves to go outdoors with the kids but recently struggles with bed time storybooks.", "Custom Presets: Coming Soon!"]; 
 
   React.useEffect(() => {
     appProcess.registerOnMessage((sender, message) => {
@@ -68,15 +71,34 @@ function ObjectPanel() {
 
 
 const togglePeronsality = (newPersonality: number) => {
-  if (newPersonality === 6) {
-    alert("Custom presets are coming soon!");
+  if (!imageSelected) {
+    setPresetMessage("Please select an image before applying a preset.");
     return;
   }
-  if (personality == newPersonality)
+
+  if (newPersonality === 6) {
+    setPresetMessage("Custom presets are coming soon!");
+    return;
+  }
+
+  // Reset any existing message
+  setPresetMessage(null);
+
+  // First, reset all filters
+  //handleResetFilters();
+ 
+
+  // Then, apply the selected personality preset
+  if (personality == newPersonality) {
     setPersonality(0); 
-  else 
+  } else {
     setPersonality(newPersonality); 
-}
+  }
+
+
+};
+
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0] || null;
@@ -135,7 +157,7 @@ const togglePeronsality = (newPersonality: number) => {
   };
   
   const handleUseSelectedImage = async () => {
-    overlay.open();
+    handleOpen();
     const draft = await selection.read();
     const [image] = draft.contents;
 
@@ -224,15 +246,18 @@ const togglePeronsality = (newPersonality: number) => {
 
   const handleOpen = () => {
     overlay.open();
-  };
+    setShowSaveButton(true); // Show the save button when overlay is open
+};
 
   const handleSave = () => {
     overlay.close({ reason: "completed" });
+    setShowSaveButton(false);
   };
 
   const handleClose = () => {
     overlay.close({ reason: "aborted" });
-  };
+    setShowSaveButton(false); // Hide the save button when overlay is closed
+};
 
   return (
     <div className={styles.scrollContainer}>
@@ -267,6 +292,11 @@ const togglePeronsality = (newPersonality: number) => {
                 <Text>
                   {descriptions[personality]}
                 </Text>
+                {presetMessage && (
+                  <Text variant="regular" tone="critical">
+                    {presetMessage}
+                  </Text>
+                )}
               </TabPanel>
               <TabPanel id="settings">
                 <Box padding="3u">
@@ -299,7 +329,7 @@ const togglePeronsality = (newPersonality: number) => {
           <Box padding="3u">
             <Text size="small" variant="bold">Image Preview</Text>
             <img src={imagePreviewUrl} alt="Preview" style={{ width: "100%", height: "auto" }} />
-            <Button variant="primary" onClick={() => addImageToDesign(uploadedImageUrl)} disabled={!uploadedImageUrl}>
+            <Button variant="primary" onClick={() => addImageToDesign(uploadedImageUrl)} disabled={!uploadedImageUrl} alignment="center">
               Add to Design
             </Button>
           </Box>
@@ -408,6 +438,22 @@ const togglePeronsality = (newPersonality: number) => {
             Apply Global Simulation
           </Button>
         </Box> */}
+        {showSaveButton && (
+          <Box alignItems="center">
+            <Button variant="primary" onClick={handleSave} alignment="center">
+              Save Changes
+            </Button>
+          </Box>
+        )}
+
+      {showSaveButton && (
+                <Box alignItems="center">
+                  <Button variant="secondary" onClick={handleClose} alignment="center">
+                    Close Without Saving
+                  </Button>
+                </Box>
+              )}
+
 
         {/* Reset Filters */}
         <Box padding="3u" alignItems="center">
