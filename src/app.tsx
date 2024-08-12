@@ -148,6 +148,11 @@ function ObjectPanel() {
     appProcess.broadcastMessage({ type: "applyCondition", condition: newCondition });
   };
 
+  const clearCondition = () => {
+    setCondition(null);
+    appProcess.broadcastMessage({ type: "clearCondition" });
+  };
+
   const applyGlobalSimulation = async () => {
     console.log("Applying global color blindness overlay...");
 
@@ -359,6 +364,10 @@ function ObjectPanel() {
               >
                 <Brightness3 /> Late Evening
               </Button>
+              <Button variant="tertiary" onClick={clearCondition}>
+                Clear Time of Day
+              </Button>
+
             </AccordionItem>
 
             <AccordionItem title="Simulate Weather Conditions">
@@ -380,6 +389,10 @@ function ObjectPanel() {
               >
                 <BeachAccess /> Under the Stars
               </Button>
+              <Button variant="tertiary" onClick={clearCondition}>
+                Clear Weather Conditions
+              </Button>
+
             </AccordionItem>
           </Accordion>
         )}
@@ -672,3 +685,4 @@ function addImageToDesign(imageRef: string | null) {
     });
   });
 }
+
