@@ -35,3 +35,17 @@
 button {
   margin-top: 8px;
 }
+
+.avatarContainer {
+  text-align:center;
+}
+
+.inactiveAvatar {
+  border: 3px solid #555;
+}
+
+.selectedAvatar {
+  border: 3px solid #080;
+}
+
+
