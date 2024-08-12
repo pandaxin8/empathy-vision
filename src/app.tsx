@@ -1,4 +1,4 @@
-import { Button, Rows, Text, Box, Switch, Slider, Accordion, AccordionItem } from "@canva/app-ui-kit";
+import { Button, Rows, Text, Box, Switch, Slider, Accordion, AccordionItem, Tab, TabList, Tabs, TabPanels, TabPanel } from "@canva/app-ui-kit";
 import * as React from "react";
 import { appProcess } from "@canva/platform";
 import { useOverlay } from "utils/use_overlay_hook";
@@ -36,6 +36,8 @@ function ObjectPanel() {
   const [blurLevel, setBlurLevel] = React.useState(0);
   const [condition, setCondition] = React.useState<string | null>(null);
   const [personality, setPersonality] = React.useState(0); 
+
+  const descriptions = ["Select a character!", "Sonic is a professional full time crime fighter and furry but he can't see very well without glasses."]; 
 
   React.useEffect(() => {
     appProcess.registerOnMessage((sender, message) => {
@@ -202,6 +204,73 @@ function ObjectPanel() {
           Visual Simulations
         </Text>
         <Text>Simulate different visual impairments and lighting conditions on your design elements.</Text>
+
+        <Tabs>
+          <Rows spacing="1u">
+            <TabList>
+              <Tab id="presets">
+                Presets
+              </Tab>
+              <Tab id="settings">
+                Settings
+              </Tab>
+            </TabList>
+            <TabPanels>
+              <TabPanel id="presets">
+                <div className={styles.avatars}>
+                  <img onClick={() => {toggleGrayscale(); togglePeronsality(1);}}  className={personality == 1 ? styles.selectedAvatar : styles.avatar} height="75" width="75" src="https://images.chesscomfiles.com/uploads/v1/user/377175819.9fbea89d.200x200o.6ce52fa7e4eb.png" />
+                  <img onClick={() => {toggleRedGreen(); togglePeronsality(2);}}  className={personality == 2 ? styles.selectedAvatar : styles.avatar} height="75" width="75" src="https://images.chesscomfiles.com/uploads/v1/user/377175975.4af813a4.200x200o.09fcc1e6719f.png" />
+                  <img onClick={() => {toggleBlueYellow(); togglePeronsality(3);}} className={personality == 3 ? styles.selectedAvatar : styles.avatar} height="75" width="75" src="https://images.chesscomfiles.com/uploads/v1/user/332157511.712395b1.200x200o.4bfb1275d9c0.jpg" />
+                </div>
+                <div className={styles.avatars}>
+                  <img  className={personality == 4 ? styles.selectedAvatar : styles.avatar} onClick={() => { updateBlurLevel(10); togglePeronsality(4); }} height="75" width="75" src="https://images.chesscomfiles.com/uploads/v1/user/66746044.1de1e916.200x200o.cd0acd474c1b.png" />
+                  <img className={personality == 5 ? styles.selectedAvatar : styles.avatar} onClick={() => { updateBlurLevel(10); togglePeronsality(5); }} height="75" width="75" src="https://images.chesscomfiles.com/uploads/v1/user/292909613.1affb03d.200x200o.234f24b2b551.png" />
+                </div>
+                <Text>
+                  {descriptions[personality]}
+                </Text>
+              </TabPanel>
+              <TabPanel id="settings">
+                <Box padding="2u">
+                  <Text size="small" variant="bold">Apply Simulations</Text>
+                  <Text>Choose an effect to apply to the selected image.</Text>
+
+                  <Switch
+                    label="Complete colour blindness"
+                    value={isGrayscale}
+                    onChange={toggleGrayscale}
+                  />
+                  <Switch
+                    label="Blue-Yellow colour blindness"
+                    value={isBlueYellow}
+                    onChange={toggleBlueYellow}
+                  />
+                  <Switch
+                    label="Red-Green colour blindness"
+                    value={isRedGreen}
+                    onChange={toggleRedGreen}
+                  />
+                  <Box padding="2u">
+                    <Text size="small" variant="bold">Blurriness Level</Text>
+                    <Slider
+                      min={0}
+                      max={10}
+                      value={blurLevel}
+                      onChange={updateBlurLevel}
+                    />
+                  </Box>
+
+                  <Button variant="secondary" disabled={!isImageReady} onClick={handleSave}>
+                    Save and Close
+                  </Button>
+                  <Button variant="secondary" disabled={!isImageReady} onClick={handleClose}>
+                    Close without Saving
+                  </Button>
+                </Box>
+              </TabPanel>
+            </TabPanels>
+          </Rows>
+        </Tabs>
 
         <Box padding="2u">
           <Text size="small" variant="bold">Image Selection</Text>
