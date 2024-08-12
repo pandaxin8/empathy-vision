@@ -37,7 +37,10 @@ function ObjectPanel() {
   const [condition, setCondition] = React.useState<string | null>(null);
   const [personality, setPersonality] = React.useState(0); 
 
-  const descriptions = ["Select a character!", "Sonic is a professional full time crime fighter and furry but he can't see very well without glasses."]; 
+  const descriptions = ["Select a character! Each one sees the world differently.", 
+    "Chad is 6ft tall and plays rugby. Unbeknowest to his friends he can't see very well without glasses.", 
+  "Professor Xavier teaches quantum physics by day but has difficulty seeing at night.",
+"Sonic is a ball of energy and sees the world in different colors."]; 
 
   React.useEffect(() => {
     appProcess.registerOnMessage((sender, message) => {
