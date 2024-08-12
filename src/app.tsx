@@ -77,6 +77,22 @@ function ObjectPanel() {
     }
   };
 
+  const handleResetFilters = () => {
+    setIsGrayscale(false);
+    setIsBlueYellow(false);
+    setIsRedGreen(false);
+    setBlurLevel(0);
+    setCondition(null);
+  
+    // Broadcast messages to remove all applied effects
+    appProcess.broadcastMessage("removeGrayscale");
+    appProcess.broadcastMessage("removeBlueYellow");
+    appProcess.broadcastMessage("removeRedGreen");
+    appProcess.broadcastMessage({ type: "applyBlur", level: 0 });
+    appProcess.broadcastMessage({ type: "clearCondition" });
+  };
+  
+
   const handleFileUpload = async () => {
     if (file) {
       try {
@@ -408,7 +424,7 @@ function ObjectPanel() {
 
         {/* Reset Filters */}
         <Box padding="2u">
-          <Button variant="primary" onClick={() => console.log("Reset Filters")}>
+          <Button variant="primary" onClick={handleResetFilters}>
             Reset Filters
           </Button>
         </Box>
