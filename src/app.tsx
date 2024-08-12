@@ -42,7 +42,8 @@ function ObjectPanel() {
   const descriptions = ["Select a character! Each one sees the world differently.", 
     "Chad is 6ft tall and plays rugby. Unbeknowest to his friends he can't see very well without glasses.", 
   "Professor Xavier teaches quantum physics by day but has difficulty seeing at night.",
-"Sonic is a ball of energy and sees the world in different colors."]; 
+"Sonic is a ball of energy and sees the world in different colors.",
+"Custom Presets: Coming Soon!", "Custom Presets: Coming Soon!", "Custom Presets: Coming Soon!"]; 
 
   React.useEffect(() => {
     appProcess.registerOnMessage((sender, message) => {
@@ -66,12 +67,16 @@ function ObjectPanel() {
 }, [selection]);
 
 
-  const togglePeronsality = (newPersonality: number) => {
-    if (personality == newPersonality)
-        setPersonality(0); 
-    else 
-      setPersonality(newPersonality); 
+const togglePeronsality = (newPersonality: number) => {
+  if (newPersonality === 6) {
+    alert("Custom presets are coming soon!");
+    return;
   }
+  if (personality == newPersonality)
+    setPersonality(0); 
+  else 
+    setPersonality(newPersonality); 
+}
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0] || null;
@@ -257,6 +262,7 @@ function ObjectPanel() {
                 <div className={styles.avatars}>
                   <img  className={personality == 4 ? styles.selectedAvatar : styles.avatar} onClick={() => { updateBlurLevel(10); togglePeronsality(4); }} height="75" width="75" src="https://images.chesscomfiles.com/uploads/v1/user/66746044.1de1e916.200x200o.cd0acd474c1b.png" />
                   <img className={personality == 5 ? styles.selectedAvatar : styles.avatar} onClick={() => { updateBlurLevel(10); togglePeronsality(5); }} height="75" width="75" src="https://images.chesscomfiles.com/uploads/v1/user/292909613.1affb03d.200x200o.234f24b2b551.png" />
+                  <img className={personality == 6 ? styles.selectedAvatar : styles.avatar} onClick={() => { updateBlurLevel(10); togglePeronsality(6); }} height="75" width="75" src="https://i.pinimg.com/474x/5d/48/bd/5d48bdb21d142838e56e13046f802133.jpg" />
                 </div>
                 <Text>
                   {descriptions[personality]}
