@@ -36,6 +36,8 @@ function ObjectPanel() {
   const [blurLevel, setBlurLevel] = React.useState(0);
   const [condition, setCondition] = React.useState<string | null>(null);
   const [personality, setPersonality] = React.useState(0); 
+  const [showSimulations, setShowSimulations] = React.useState(false);
+
 
   const descriptions = ["Select a character! Each one sees the world differently.", 
     "Chad is 6ft tall and plays rugby. Unbeknowest to his friends he can't see very well without glasses.", 
@@ -50,16 +52,19 @@ function ObjectPanel() {
   }, []);
 
   React.useEffect(() => {
-    // Ensure that imageSelected is true if an image is selected from the user's design
     const checkImageSelection = async () => {
-      const draft = await selection.read();
-      const [image] = draft.contents;
-      if (image) {
-        setImageSelected(true);
-      }
+        const draft = await selection.read();
+        const [image] = draft.contents;
+        if (image) {
+            setImageSelected(true);
+        } else {
+            setImageSelected(false);
+            setShowSimulations(false); // Hide simulations when image is deselected
+        }
     };
     checkImageSelection();
-  }, [selection]);
+}, [selection]);
+
 
   const togglePeronsality = (newPersonality: number) => {
     if (personality == newPersonality)
@@ -125,6 +130,7 @@ function ObjectPanel() {
   };
   
   const handleUseSelectedImage = async () => {
+    overlay.open();
     const draft = await selection.read();
     const [image] = draft.contents;
 
@@ -133,8 +139,10 @@ function ObjectPanel() {
     const { url } = await getTemporaryUrl({ type: "IMAGE", ref: image.ref });
     setUploadedImageUrl(url);
     setImageSelected(true);
+    setShowSimulations(true); // Show simulations when image is selected
     appProcess.broadcastMessage({ isImageReady: true });
-  };
+};
+
 
   const toggleGrayscale = () => {
     const newValue = !isGrayscale;
@@ -256,65 +264,10 @@ function ObjectPanel() {
               </TabPanel>
               <TabPanel id="settings">
                 <Box padding="3u">
-                  <Text size="small" variant="bold">Apply Simulations</Text>
-                  <Text>Choose an effect to apply to the selected image.</Text>
-
-                  {/* <Switch
-                    label="Complete colour blindness"
-                    value={isGrayscale}
-                    onChange={toggleGrayscale}
-                  />
-                  <Switch
-                    label="Blue-Yellow colour blindness"
-                    value={isBlueYellow}
-                    onChange={toggleBlueYellow}
-                  />
-                  <Switch
-                    label="Red-Green colour blindness"
-                    value={isRedGreen}
-                    onChange={toggleRedGreen}
-                  /> */}
-
-                  <AccordionItem title="Color Blindness Simulations">
-                      <Box padding="2u"> 
-                          <Switch
-                              label="Complete colour blindness"
-                              value={isGrayscale}
-                              onChange={toggleGrayscale}
-                          />
-                          <Switch
-                              label="Blue-Yellow colour blindness"
-                              value={isBlueYellow}
-                              onChange={toggleBlueYellow}
-                          />
-                          <Switch
-                              label="Red-Green colour blindness"
-                              value={isRedGreen}
-                              onChange={toggleRedGreen}
-                          />
-                      </Box>
-                  </AccordionItem>
-
-
-                  <AccordionItem title="Blurry Vision Simulation">
-                    <Box padding="2u">
-                      <Text size="small" variant="bold">Blurriness Level</Text>
-                      <Slider
-                        min={0}
-                        max={10}
-                        value={blurLevel}
-                        onChange={updateBlurLevel}
-                      />
-                    </Box>
-                  </AccordionItem>
-                  
-
-                  <Button variant="secondary" disabled={!isImageReady} onClick={handleSave}>
-                    Save and Close
-                  </Button>
-                  <Button variant="secondary" disabled={!isImageReady} onClick={handleClose}>
-                    Close without Saving
-                  </Button>
+                <Rows spacing="2u">
+                <Text size="medium" variant="bold">Customisations</Text>
+                <Text>Coming Soon!</Text>
+                </Rows>
                 </Box>
               </TabPanel>
             </TabPanels>
@@ -329,7 +282,7 @@ function ObjectPanel() {
           <Button variant="secondary" onClick={handleFileUpload} disabled={!file}>
               Upload image
           </Button>
-          <Button variant="secondary" disabled={!overlay.canOpen || !imageSelected} onClick={handleOpen}>
+          <Button variant="secondary" disabled={!overlay.canOpen || !imageSelected} onClick={handleUseSelectedImage}>
               Use selected image
           </Button>
           </Rows>
@@ -346,7 +299,7 @@ function ObjectPanel() {
           </Box>
         )}
 
-        {imageSelected && (
+        {showSimulations && imageSelected && (
           <Accordion>
             <AccordionItem title="Apply Simulations">
               <Text>Choose an effect to apply to the selected image.</Text>
